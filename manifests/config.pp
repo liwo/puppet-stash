@@ -26,6 +26,12 @@ class stash::config(
     $moved = undef
   }
 
+  if $stash::product == 'bitbucket' {
+    $properties = 'bitbucket.properties'
+  } else {
+    $properties = 'stash-config.properties'
+  }
+
   File {
     owner => $stash::user,
     group => $stash::group,
@@ -38,14 +44,14 @@ class stash::config(
   }
 
   file { "${stash::webappdir}/bin/setenv.sh":
-    content => template('stash/setenv.sh.erb'),
+    content => template("stash/setenv.sh.${stash::product}.erb"),
     mode    => '0750',
     require => Class['stash::install'],
     notify  => Class['stash::service'],
   } ->
 
   file { "${stash::webappdir}/bin/user.sh":
-    content => template('stash/user.sh.erb'),
+    content => template("stash/user.sh.${stash::product}.erb"),
     mode    => '0750',
     require => [
       Class['stash::install'],
@@ -65,13 +71,13 @@ class stash::config(
     ensure  => present,
     path    => "${stash::webappdir}/conf/scripts.cfg",
     section => '',
-    setting => 'stash_httpport',
+    setting => "${stash::product}_httpport",
     value   => $tomcat_port,
     require => Class['stash::install'],
     before  => Class['stash::service'],
   } ->
 
-  file { "${stash::homedir}/${moved}stash-config.properties":
+  file { "${stash::homedir}/${moved}${properties}":
     content => template('stash/stash-config.properties.erb'),
     mode    => '0640',
     require => [

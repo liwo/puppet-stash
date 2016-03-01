@@ -43,46 +43,48 @@ class stash::backup(
     group  => $group,
   }
 
-  case $deploy_module {
-    'staging': {
-      require ::staging
-      staging::file { $file:
-        source  => "${download_url}/${version}/${file}",
-        timeout => 1800,
-      } ->
-      staging::extract { $file:
-        target  => $appdir,
-        creates => "${appdir}/lib",
-        strip   => 1,
-        user    => $user,
-        group   => $group,
-        require => [
-          File[$appdir],
-          File[$backup_home],
-          User[$user],
-        ],
+  if $ensure == 'present' {
+    case $deploy_module {
+      'staging': {
+        require ::staging
+        staging::file { $file:
+          source  => "${download_url}/${version}/${file}",
+          timeout => 1800,
+        } ->
+        staging::extract { $file:
+          target  => $appdir,
+          creates => "${appdir}/lib",
+          strip   => 1,
+          user    => $user,
+          group   => $group,
+          require => [
+            File[$appdir],
+            File[$backup_home],
+            User[$user],
+          ],
+        }
       }
-    }
-    'archive': {
-      archive { "/tmp/${file}":
-        ensure          => present,
-        extract         => true,
-        extract_command => 'tar xfz %s --strip-components=1',
-        extract_path    => $appdir,
-        source          => "${download_url}/${version}/${file}",
-        user            => $user,
-        group           => $group,
-        creates         => "${appdir}/lib",
-        cleanup         => true,
-        require         => [
-          File[$appdir],
-          File[$backup_home],
-          User[$user],
-        ],
+      'archive': {
+        archive { "/tmp/${file}":
+          ensure          => present,
+          extract         => true,
+          extract_command => 'tar xfz %s --strip-components=1',
+          extract_path    => $appdir,
+          source          => "${download_url}/${version}/${file}",
+          user            => $user,
+          group           => $group,
+          creates         => "${appdir}/lib",
+          cleanup         => true,
+          require         => [
+            File[$appdir],
+            File[$backup_home],
+            User[$user],
+          ],
+        }
       }
-    }
-    default: {
-      fail('deploy_module parameter must equal "archive" or staging""')
+      default: {
+        fail('deploy_module parameter must equal "archive" or staging""')
+      }
     }
   }
 
